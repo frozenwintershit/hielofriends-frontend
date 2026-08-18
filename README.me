@@ -1,0 +1,34 @@
+# NeonPulse - Frontend Interactivo (Hito 2)
+
+Este proyecto corresponde al desarrollo de la interfaz visual e interactiva para la plataforma **NeonPulse**. El objetivo de esta etapa es abandonar los datos estáticos locales para demostrar el dominio en la construcción de interfaces dinámicas, manipulación segura del DOM, tipado estricto en TypeScript y la gestión de peticiones asíncronas con feedback continuo.
+
+## Pilares de Desarrollo Implementados
+
+1. **Modelado de Datos Estricto:** Eliminación absoluta del tipo `any`. Uso de contratos de datos herméticos mediante interfaces y objetos constantes para el control de estados de la UI.
+2. **Manipulación Segura del DOM:** Captura de nodos del navegador aplicando guardias de nulidad (`if !== null`) y aserciones especializadas (`as HTMLInputElement`) para evitar excepciones en la consola. Neutralización de formularios con `preventDefault()`.
+3. **Arquitectura Asíncrona:** Consumo de datos remotos mediante la sintaxis moderna `async/await`, control de flujo con bloques `try/catch` validando el estado de la respuesta HTTP (`response.ok`), e implementación de indicadores visuales de carga y bloques de error descriptivos en pantalla.
+
+## Tecnologías Utilizadas
+
+- **Vite** (Entorno de desarrollo rápido)
+- **TypeScript Vanilla** (Tipado estricto sin frameworks)
+- **Módulos nativos ES6**
+
+## Comandos de Instalación y Ejecución
+
+Asegúrate de estar posicionado dentro de la carpeta del frontend en tu terminal antes de 
+ejecutar los siguientes comandos:
+
+1. **Instalar dependencias del proyecto:**
+   ```bash
+   npm install
+
+2. Para ejecutar el servidor de desarrollo:
+   ```bash
+   npm run dev
+
+3. Para ejecutar la verificación estricta:
+   ```bash
+   npm run build
+
+
