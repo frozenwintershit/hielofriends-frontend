@@ -45,24 +45,20 @@
   <body>
     <h1>🐧 Hielofriends - Gestión de Pedidos</h1>
 
-    <!-- Formulario Pilar 2 -->
-    <form id="form-reserva">
-      <label for="txt-nombre">Nombre del cliente:</label>
+    <!-- Formulario alineado con CreateOrderRequest de Spring Boot -->
+    <form id="form-reserva" novalidate>
+      <label for="slc-peluche">Seleccionar peluche del catálogo:</label>
+      <select id="slc-peluche" required>
+        <option value="" disabled selected>Cargando peluches disponibles...</option>
+      </select>
+
+      <label for="txt-email">Correo del cliente:</label>
       <input 
-        type="text" 
-        id="txt-nombre" 
-        placeholder="Ej: Sebastián Vidal" 
+        type="email" 
+        id="txt-email" 
+        placeholder="cliente@ejemplo.com" 
         required 
       />
-
-      <label for="slc-modelo">Modelo de peluche:</label>
-      <select id="slc-modelo" required>
-        <option value="Pingüino Emperador">🐧 Pingüino Emperador</option>
-        <option value="Pingüino Adelia">❄️ Pingüino Adelia</option>
-        <option value="Pingüino Papúa">🪨 Pingüino Papúa</option>
-        <option value="Pingüino Penacho Amarillo">⚡ Pingüino Penacho Amarillo</option>
-        <option value="Pingüino Azul">🌊 Pingüino Azul</option>
-      </select>
 
       <label for="txt-cantidad">Cantidad:</label>
       <input 
@@ -75,14 +71,14 @@
       />
 
       <button type="submit">Crear Pedido</button>
-      <p id="bloque-error" style="color: red;"></p>
+      <p id="bloque-error"></p>
     </form>
 
     <hr style="margin: 30px 0;" />
 
-    <!-- Contenedor Pilar 3 -->
+    <h3>Catálogo y Stock Disponible</h3>
     <div id="contenedor-catalogo"></div>
 
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="./src/main.ts"></script>
   </body>
 </html>

@@ -1,99 +1,152 @@
-// src/main.ts
-
-// 1. Importación limpia de tipos y valores (Pilar 1)
 import { 
-  OrderStatus, 
-  type PlushOrder, 
-  type PenguinModelType 
+  type PenguinPlush, 
+  type CreateOrderDTO,
+  type PlushPrice
 } from "./models/plushOrder";
+import { fetchCatalog, createOrder } from "./services/OrderAPI";
 
 // ==========================================
-// PILAR 2: Manejo del DOM y Formularios
+// REFERENCIAS AL DOM Y GUARDIAS
 // ==========================================
 const orderForm = document.getElementById("form-reserva") as HTMLFormElement | null;
+const plushSelect = document.getElementById("slc-peluche") as HTMLSelectElement | null;
+const emailInput = document.getElementById("txt-email") as HTMLInputElement | null;
+const quantityInput = document.getElementById("txt-cantidad") as HTMLInputElement | null;
+const errorBlock = document.getElementById("bloque-error") as HTMLElement | null;
+const catalogContainer = document.getElementById("contenedor-catalogo") as HTMLElement | null;
 
-if (orderForm !== null) { // Guardia de nulidad estricta
-  orderForm.addEventListener("submit", (event: Event) => {
-    event.preventDefault(); // Neutraliza la recarga nativa
+// ==========================================
+// UTILIDADES Y FORMATEO
+// ==========================================
+function formatPrice(price: PlushPrice | number): string {
+  if (typeof price === "number") {
+    return `$${price.toLocaleString("es-CL")}`;
+  }
+  const amount = price.amount ?? price.value ?? 0;
+  const currency = price.currency ?? "CLP";
+  return `$${amount.toLocaleString("es-CL")} ${currency}`;
+}
 
-    const nameInput = document.getElementById("txt-nombre") as HTMLInputElement | null;
-    const modelSelect = document.getElementById("slc-modelo") as HTMLSelectElement | null;
-    const quantityInput = document.getElementById("txt-cantidad") as HTMLInputElement | null;
-    const errorBlock = document.getElementById("bloque-error");
+// ==========================================
+// RENDERIZADO Y CARGA ASÍNCRONA (GET)
+// ==========================================
+function renderPlushCard(plush: PenguinPlush): string {
+  return `
+    <article style="border: 1px solid #ccc; padding: 12px; margin-bottom: 10px; border-radius: 6px;">
+      <h4>${plush.model}</h4>
+      <p><strong>Precio:</strong> ${formatPrice(plush.price)}</p>
+      <p><strong>Stock disponible:</strong> ${plush.availableStock}</p>
+      <small style="color: #666;">ID: ${plush.id}</small>
+    </article>
+  `;
+}
 
-    // Guardia de nulidad conjunta para los elementos del formulario
-    if (!nameInput || !modelSelect || !quantityInput) return;
+function populatePlushSelect(plushies: PenguinPlush[]): void {
+  if (!plushSelect) return;
 
-    const nameValue = nameInput.value.trim();
-    const modelValue = modelSelect.value as PenguinModelType;
-    const quantityValue = parseInt(quantityInput.value, 10);
+  if (plushies.length === 0) {
+    plushSelect.innerHTML = `<option value="" disabled selected>No hay peluches disponibles</option>`;
+    return;
+  }
 
-    // Validación defensiva en el cliente
-    if (nameValue.length === 0 || isNaN(quantityValue) || quantityValue <= 0) {
-      if (errorBlock) {
-        errorBlock.textContent = "Error: Ingrese un nombre y una cantidad válida de peluches.";
+  plushSelect.innerHTML = plushies
+    .map(
+      (p) =>
+        `<option value="${p.id}" ${p.availableStock === 0 ? "disabled" : ""}>
+          ${p.model} - ${formatPrice(p.price)} (Stock: ${p.availableStock})
+        </option>`
+    )
+    .join("");
+}
+
+async function loadCatalog(): Promise<void> {
+  if (!catalogContainer) return;
+
+  catalogContainer.innerHTML = "<p>Cargando catálogo desde el servidor...</p>";
+
+  try {
+    const plushies = await fetchCatalog();
+
+    if (plushies.length === 0) {
+      catalogContainer.innerHTML = "<p>No hay peluches registrados actualmente.</p>";
+      if (plushSelect) {
+        plushSelect.innerHTML = `<option value="" disabled selected>Catálogo vacío</option>`;
       }
       return;
     }
 
-    if (errorBlock) errorBlock.textContent = "";
+    // 1. Renderizar tarjetas de stock
+    catalogContainer.innerHTML = plushies.map(renderPlushCard).join("");
 
-    // Creación del objeto bajo el contrato estricto de PlushOrder
-    const nuevoPedido: PlushOrder = {
-      id: Date.now().toString(),
-      customerName: nameValue,
-      penguinModel: modelValue,
-      quantity: quantityValue,
-      status: OrderStatus.PENDING
-    };
-
-    console.log("Pedido de pingüinos capturado:", nuevoPedido);
-    
-    // Limpiar formulario tras éxito
-    orderForm.reset();
-  });
-}
-
-// ==========================================
-// PILAR 3: Arquitectura Asíncrona (Fetch)
-// ==========================================
-async function loadCatalog(): Promise<void> {
-  const container = document.getElementById("contenedor-catalogo");
-  if (!container) return; // Guardia de nulidad
-
-  // 1. Feedback visual de carga inicial
-  container.innerHTML = "<p>Cargando catálogo de pingüinos desde el servidor...</p>";
-
-  try {
-    const response = await fetch("http://localhost:3000/api/items");
-
-    if (!response.ok) {
-      throw new Error(`Error de servidor: Código HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    // Renderizado seguro de datos recibidos
-    container.innerHTML = `
-      <div>
-        <h3>Catálogo Hielofriends</h3>
-        <p><strong>Estado del catálogo:</strong> ${data.title || "Datos cargados correctamente"}</p>
-      </div>
-    `;
-
+    // 2. Poblar dinámicamente las opciones del select
+    populatePlushSelect(plushies);
   } catch (error: unknown) {
-    // Manejo seguro del tipo de error sin usar 'any'
-    const errorMessage = error instanceof Error ? error.message : "Error desconocido de red";
-    console.error("Fallo de red:", errorMessage);
-
-    // Feedback visual ante fallos en pantalla
-    container.innerHTML = `
+    const message = error instanceof Error ? error.message : "Error de comunicación con el servidor.";
+    catalogContainer.innerHTML = `
       <div style="color: red; border: 1px solid red; padding: 10px; border-radius: 6px;">
-        <p><strong>No fue posible conectar con el servidor de Hielofriends.</strong></p>
-        <small>${errorMessage}</small>
+        <p><strong>Fallo al cargar catálogo de HieloFriends:</strong></p>
+        <small>${message}</small>
       </div>
     `;
   }
+}
+
+// ==========================================
+// CONTROLADOR DEL FORMULARIO (POST)
+// ==========================================
+if (orderForm !== null) {
+  orderForm.addEventListener("submit", async (event: Event) => {
+    event.preventDefault();
+
+    if (!emailInput || !plushSelect || !quantityInput) return;
+
+    const emailValue = emailInput.value.trim();
+    const plushIdValue = plushSelect.value;
+    const quantityValue = parseInt(quantityInput.value, 10);
+
+    // Validación defensiva en cliente
+    if (emailValue.length === 0 || !plushIdValue || isNaN(quantityValue) || quantityValue <= 0) {
+      if (errorBlock) {
+        errorBlock.style.color = "red";
+        errorBlock.textContent = "Error: Ingrese un correo válido, seleccione un peluche y una cantidad mayor a 0.";
+      }
+      return;
+    }
+
+    const payload: CreateOrderDTO = {
+      customerEmail: emailValue,
+      plushId: plushIdValue,
+      quantity: quantityValue
+    };
+
+    try {
+      if (errorBlock) {
+        errorBlock.style.color = "blue";
+        errorBlock.textContent = "Guardando pedido en el servidor...";
+      }
+
+      // 1. Envío POST a Spring Boot (/api/v1/penguins/orders)
+      await createOrder(payload);
+
+      if (errorBlock) {
+        errorBlock.style.color = "green";
+        errorBlock.textContent = "¡Pedido registrado exitosamente!";
+      }
+
+      // 2. Limpieza de inputs (manteniendo catálogo poblado)
+      emailInput.value = "";
+      quantityInput.value = "1";
+
+      // 3. Refresco reactivo del catálogo y stock
+      await loadCatalog();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Error al registrar el pedido.";
+      if (errorBlock) {
+        errorBlock.style.color = "red";
+        errorBlock.textContent = message;
+      }
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", loadCatalog);

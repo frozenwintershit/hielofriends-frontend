@@ -1,6 +1,4 @@
-// src/models/plushOrder.ts
-
-// 1. Modelos de pingüinos permitidos (Pilar 1)
+// 1. Modelos de pingüinos permitidos
 export const PenguinModel = {
   EMPEROR: "Pingüino Emperador",
   ADELIE: "Pingüino Adelia",
@@ -21,11 +19,33 @@ export const OrderStatus = {
 
 export type OrderStatusType = typeof OrderStatus[keyof typeof OrderStatus];
 
-// 3. Contrato de datos estricto
+// 3. Representación del Value Object PlushPrice de Spring Boot
+export interface PlushPrice {
+  amount?: number;
+  value?: number;
+  currency?: string;
+}
+
+// 4. Contrato real para los elementos que retorna GET /api/v1/penguins
+export interface PenguinPlush {
+  id: string;
+  model: string;
+  price: PlushPrice | number;
+  availableStock: number;
+}
+
+// 5. Contrato de datos estricto de la entidad completa de pedidos
 export interface PlushOrder {
   id: string;
   customerName: string;
-  penguinModel: PenguinModelType; // Tipo restringido a los pingüinos definidos arriba
+  penguinModel: PenguinModelType;
   quantity: number;
   status: OrderStatusType;
+}
+
+// 6. DTO exacto para la creación de órdenes (POST /api/v1/penguins/orders)
+export interface CreateOrderDTO {
+  plushId: string;
+  quantity: number;
+  customerEmail: string;
 }
